@@ -1,0 +1,7 @@
+apiVersion: kscout.io/v1
+kind: KScout
+metadata:
+  name: example-kscout
+spec:
+  # Add fields here
+  size: 3
