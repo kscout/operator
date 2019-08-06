@@ -15,6 +15,13 @@ type KScoutSpec struct {
 	// Add custom validation using kubebuilder tags:
 	// https://book.kubebuilder.io/beyond_basics/generating_crd.html
 
+	// Environment is a name used to signify the stability and audience of the
+	// KScout resources. This value must be unique among KScout resources.
+	//
+	// The special value "prod" is used for stable production code presented
+	// to users.
+	Environment string `json:"environment"`
+
 	// MinReplicas is the lowest number of pods each service will be allowed
 	// to run.
 	MinReplicas int32 `json:"minReplicas"`
