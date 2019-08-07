@@ -3,13 +3,13 @@ package kscout
 import (
 	"context"
 
-	knv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	kscoutv1 "github.com/kscout/operator/pkg/apis/kscout/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	knv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -22,19 +22,10 @@ import (
 
 var log = logf.Log.WithName("controller_kscout")
 
-// Add creates a new KScout Controller and adds it to the Manager. The Manager
-// will set fields on the Controller and Start it when the Manager is Started.
+// Add creates a KScout controller and adds it to the manager.
 func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
-}
+	r := &ReconcileKScout{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 
-// newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileKScout{client: mgr.GetClient(), scheme: mgr.GetScheme()}
-}
-
-// add adds a new Controller to mgr with r as the reconcile.Reconciler
-func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
 	c, err := controller.New("kscout-controller", mgr,
 		controller.Options{Reconciler: r})
@@ -51,7 +42,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	// Watch for changes to secondary resources and requeue the
 	// owner KScout
-	watchTypes := []runtime.Object{knv1beta1.Service{}}
+	watchTypes := []runtime.Object{knv1alpha1.Service{}}
 	for _, watchT := range watchTypes {
 		err = c.Watch(&source.Kind{Type: &watchT},
 			&handler.EnqueueRequestForOwner{
@@ -160,19 +151,19 @@ func (r *ReconcileKScout) Reconcile(request reconcile.Request) (
 func getCatalogAPI(instance kscoutv1.KScout) []runtime.Object {
 	svcImg := "quay.io/kscout/catalog-api:" + instance.CatalogAPI.ImageVersion
 	return []runtime.Object{
-		knv1beta1.Service{
+		knv1alpha1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      instance.Name + "-catalog-api",
 				Namespace: instance.Namespace,
 			},
-			Spec: knv1beta1.ServiceSpec{
-				ConfigurationSpec: knv1beta1.ConfigurationSpec{
-					Template: knv1beta1.RevisionTemplateSpec{
+			Spec: knv1alpha1.ServiceSpec{
+				ConfigurationSpec: knv1alpha1.ConfigurationSpec{
+					Template: knv1alpha1.RevisionTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      instance.Name + "-catalog-api",
 							Namespace: instance.Namespace,
 						},
-						Spec: knv1beta1.RevisionSpec{
+						Spec: knv1alpha1.RevisionSpec{
 							PodSpec: corev1.PodSpec{
 								Containers: []corev1.Container{
 									corev1.Container{
