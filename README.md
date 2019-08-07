@@ -19,3 +19,16 @@ go mod vendor
 
 If you make a change to an API type structure 
 (in `pkg/apis/kscout/v1/*_types.go`) run the `generate` make target.
+
+To build the operator container image run:
+
+```
+make build
+```
+
+To push this container image and deploy it to your current Kubernetes 
+cluster run:
+
+```
+make deploy
+```
