@@ -42,9 +42,9 @@ func Add(mgr manager.Manager) error {
 
 	// Watch for changes to secondary resources and requeue the
 	// owner KScout
-	watchTypes := []runtime.Object{knv1alpha1.Service{}}
+	watchTypes := []runtime.Object{&knv1alpha1.Service{}}
 	for _, watchT := range watchTypes {
-		err = c.Watch(&source.Kind{Type: &watchT},
+		err = c.Watch(&source.Kind{Type: watchT},
 			&handler.EnqueueRequestForOwner{
 				IsController: true,
 				OwnerType:    &kscoutv1.KScout{},
@@ -101,8 +101,8 @@ func (r *ReconcileKScout) Reconcile(request reconcile.Request) (
 	}
 
 	// Define desired resources
-	wantRes := []runtime.Object{}
-	wantRes = append(wantRes, getCatalogAPI(instance)...)
+	wantRes := []metav1.Object{}
+	wantRes = append(wantRes, getCatalogAPI(*instance)...)
 
 	// Set KScout instance as the owner and controller of each resource
 	for _, want := range wantRes {
@@ -115,20 +115,19 @@ func (r *ReconcileKScout) Reconcile(request reconcile.Request) (
 	// Check if desired resources already exists
 	for _, want := range wantRes {
 		objKey := types.NamespacedName{}
-		if wantObjMeta, ok := want.(v1meta.ObjectMeta); !ok {
-			return reconcile.Result{}, fmt.Errorf("desired object %#v "+
-				"did not have v1meta.ObjectMeta", want)
-		} else {
-			objKey.Name = wantObjMeta.Name
-			objKey.Namspace = wantObjMeta.Namespace
-		}
+
+		objKey.Name = want.GetName()
+		objKey.Namespace = want.GetNamespace()
+
+		// TODO: Fill in the pod
+		kscoutPod := &corev1.Pod{}
 
 		var found runtime.Object
 		err = r.client.Get(context.TODO(), objKey, found)
 		if err != nil && errors.IsNotFound(err) {
 			reqLogger.Info("Creating a new %T", want, "Namespace",
 				objKey.Namespace, "Name", objKey.Name)
-			err = r.client.Create(context.TODO(), pod)
+			err = r.client.Create(context.TODO(), kscoutPod)
 			if err != nil {
 				return reconcile.Result{}, err
 			}
@@ -148,29 +147,25 @@ func (r *ReconcileKScout) Reconcile(request reconcile.Request) (
 }
 
 // getCatalogAPI returns resources which run the Catalog API
-func getCatalogAPI(instance kscoutv1.KScout) []runtime.Object {
-	svcImg := "quay.io/kscout/catalog-api:" + instance.CatalogAPI.ImageVersion
-	return []runtime.Object{
-		knv1alpha1.Service{
+func getCatalogAPI(instance kscoutv1.KScout) []metav1.Object {
+	svcImg := "quay.io/kscout/catalog-api:" + instance.Spec.CatalogAPI.ImageVersion
+	return []metav1.Object{
+		&knv1alpha1.Service{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      instance.Name + "-catalog-api",
-				Namespace: instance.Namespace,
+				Name:      instance.ObjectMeta.Name + "-catalog-api",
+				Namespace: instance.ObjectMeta.Namespace,
 			},
 			Spec: knv1alpha1.ServiceSpec{
 				ConfigurationSpec: knv1alpha1.ConfigurationSpec{
-					Template: knv1alpha1.RevisionTemplateSpec{
+					Template: &knv1alpha1.RevisionTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      instance.Name + "-catalog-api",
 							Namespace: instance.Namespace,
 						},
 						Spec: knv1alpha1.RevisionSpec{
-							PodSpec: corev1.PodSpec{
-								Containers: []corev1.Container{
-									corev1.Container{
-										Name:  "app",
-										Image: svcImg,
-									},
-								},
+							DeprecatedContainer: &corev1.Container{
+								Name:  "app",
+								Image: svcImg,
 							},
 						},
 					},
