@@ -14,6 +14,7 @@ require (
 	github.com/NYTimes/gziphandler v1.0.1 // indirect
 	github.com/go-openapi/spec v0.19.2
 	github.com/gobuffalo/flect v0.1.5 // indirect
+	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/google/go-containerregistry v0.0.0-20190729175742-ef12d49c8daf // indirect
 	github.com/operator-framework/operator-sdk v0.9.0
 	github.com/spf13/pflag v1.0.3
