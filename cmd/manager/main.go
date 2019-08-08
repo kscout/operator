@@ -8,6 +8,8 @@ import (
 	"runtime"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+
+	v1 "k8s.io/api/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/kscout/operator/pkg/apis"
@@ -28,8 +30,7 @@ import (
 
 // Change below variables to serve metrics on different host or port.
 var (
-	metricsHost       = "0.0.0.0"
-	metricsPort int32 = 8383
+	metricsHost = "0.0.0.0"
 )
 var log = logf.Log.WithName("cmd")
 
@@ -84,6 +85,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	metricsPort := []v1.ServicePort{}
+	metricsPort = append(metricsPort, v1.ServicePort{Port: 8383})
+
 	// Create a new Cmd to provide shared dependencies and start components
 	mgr, err := manager.New(cfg, manager.Options{
 		Namespace:          namespace,
@@ -110,7 +114,7 @@ func main() {
 	}
 
 	// Create Service object to expose the metrics port.
-	_, err = metrics.ExposeMetricsPort(ctx, metricsPort)
+	_, err = metrics.CreateMetricsService(ctx, cfg, metricsPort)
 	if err != nil {
 		log.Info(err.Error())
 	}
